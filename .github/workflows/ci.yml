@@ -1,0 +1,13 @@
+name: CI
+on:
+  push:
+    branches: [ sandbox ]
+  pull_request:
+    branches: [ sandbox ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello
+        run: echo "✅ CI is alive!"
