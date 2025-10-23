@@ -4,25 +4,29 @@ on:
     branches: [ sandbox ]
   push:
     branches: [ sandbox ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node (20.x) + pnpm
+      - name: Setup Node (20.x)
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          cache: 'pnpm'
+          node-version: '20.19.5'
+          cache: 'pnpm'   # включает кеш по pnpm-lock.yaml, если он есть
 
-      - name: Enable corepack / prepare pnpm@9
-        run: |
-          corepack enable
-          corepack prepare pnpm@9 --activate
+      # Устанавливаем pnpm независимо от corepack
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
-      # Устанавливаем зависимости, если есть lockfile; если проекта пока нет — просто пропускаем
+      # Установка зависимостей: если есть lockfile — строго, иначе мягко; если в репо пока нет package.json — просто пропускаем
       - name: Install
         run: |
           if [ -f pnpm-lock.yaml ]; then
@@ -33,7 +37,15 @@ jobs:
             echo "No package.json yet — skipping install"
           fi
 
-      # Если в package.json есть скрипт verify — запустим его, иначе лёгкий smoke
+      # Если есть скрипт verify — запустим его; иначе сделаем лёгкий smoke
+      - name: Verify or smoke
+        run: |
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.verify?0:1)"; then
+            pnpm run verify
+          else
+            node -v && pnpm -v && echo "No verify script — smoke OK"
+          fi
+
       - name: Verify or smoke
         run: |
           if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.verify?0:1)"; then
