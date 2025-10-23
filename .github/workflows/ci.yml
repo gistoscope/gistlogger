@@ -1,7 +1,5 @@
 name: CI
 on:
-  push:
-    branches: [ sandbox ]
   pull_request:
     branches: [ sandbox ]
 
